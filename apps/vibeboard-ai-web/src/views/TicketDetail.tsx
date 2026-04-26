@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { VibeTicket, VibeStage } from '../types/vibeTicket';
 import { mockAuthTicket } from '../data/vibeTicketMock';
+import { BriefStage } from '../components/BriefStage';
 
 interface TicketDetailProps {
   id?: string;
@@ -24,7 +25,7 @@ export function TicketDetail({ id, onBack }: TicketDetailProps) {
 
       <div className="flex-1 overflow-hidden flex flex-col">
         <div className="flex-1 overflow-y-auto">
-          {currentStage === 'brief' && <div className="p-6">Brief Stage (U3)</div>}
+          {currentStage === 'brief' && <BriefStage brief={ticket.brief} />}
           {currentStage === 'plan' && <div className="p-6">Plan Stage (U4)</div>}
           {currentStage === 'evidence' && <div className="p-6">Evidence Stage (U5)</div>}
           {currentStage === 'review' && <div className="p-6">Review Stage (U7)</div>}
