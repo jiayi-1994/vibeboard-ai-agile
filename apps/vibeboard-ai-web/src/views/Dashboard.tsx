@@ -13,10 +13,11 @@ export function Dashboard() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <KPIBox title="首个证据生成时间" value="42.8" unit="s" icon="timer" iconColor="text-surface-container opacity-50" />
         <KPIBox title="活跃代理小队" value="4" unit="/4" icon="groups" iconColor="text-surface-container opacity-50" />
         <KPIBox title="验收通过率" value="98.5" unit="%" icon="verified" isPrimary iconColor="text-primary opacity-20" />
+        <KPIBox title="Vibe 工作流阶段" value="证据" unit="" icon="fact_check" iconColor="text-secondary opacity-30" isSecondary />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1">
@@ -82,11 +83,19 @@ export function Dashboard() {
   );
 }
 
-function KPIBox({ title, value, unit, icon, isPrimary, iconColor }: any) {
+function KPIBox({ title, value, unit, icon, isPrimary, isSecondary, iconColor }: any) {
   return (
-    <div className={`border-2 border-on-surface p-4 brutal-shadow flex flex-col justify-between h-32 relative overflow-hidden ${isPrimary ? 'bg-primary-container text-on-primary-container' : 'bg-surface'}`}>
+    <div className={`border-2 border-on-surface p-4 brutal-shadow flex flex-col justify-between h-32 relative overflow-hidden ${
+      isPrimary ? 'bg-primary-container text-on-primary-container' : 
+      isSecondary ? 'bg-secondary-container text-on-secondary-container' : 
+      'bg-surface'
+    }`}>
       <div className="text-sm font-bold uppercase">{title}</div>
-      <div className={`text-4xl font-bold mt-auto ${isPrimary ? 'text-on-primary-container' : 'text-primary'}`}>{value}<span className="text-2xl">{unit}</span></div>
+      <div className={`text-4xl font-bold mt-auto ${
+        isPrimary ? 'text-on-primary-container' : 
+        isSecondary ? 'text-secondary' : 
+        'text-primary'
+      }`}>{value}<span className="text-2xl">{unit}</span></div>
       <span className={`material-symbols-outlined absolute -right-4 -bottom-4 text-[80px] select-none ${iconColor}`}>{icon}</span>
     </div>
   );

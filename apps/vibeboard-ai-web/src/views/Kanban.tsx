@@ -1,3 +1,6 @@
+import { mockTickets } from '../data/vibeTicketMock';
+import type { VibeStage } from '../types/vibeTicket';
+
 export function Kanban({ onTicketSelect }: { onTicketSelect: (id: string) => void }) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -28,8 +31,8 @@ export function Kanban({ onTicketSelect }: { onTicketSelect: (id: string) => voi
             <button className="material-symbols-outlined hover:text-primary">more_horiz</button>
           </div>
           <div className="flex-1 p-2 overflow-y-auto flex flex-col gap-2">
-            <TicketCard id="#VB-089" title="优化数据库索引策略以降低查询延迟" progress={0} tag="DBA" onSelect={onTicketSelect} />
-            <TicketCard id="#VB-092" title="解析第三方 API 文档并生成类型定义" progress={0} tag="INTEGRATION" onSelect={onTicketSelect} />
+            <TicketCard id="#VB-089" title="优化数据库索引策略以降低查询延迟" progress={0} tag="DBA" vibeStage="brief" onSelect={onTicketSelect} />
+            <TicketCard id="#VB-092" title="解析第三方 API 文档并生成类型定义" progress={0} tag="INTEGRATION" vibeStage="brief" onSelect={onTicketSelect} />
           </div>
         </div>
 
@@ -43,7 +46,7 @@ export function Kanban({ onTicketSelect }: { onTicketSelect: (id: string) => voi
             <button className="material-symbols-outlined hover:text-primary">more_horiz</button>
           </div>
           <div className="flex-1 p-2 overflow-y-auto flex flex-col gap-2">
-            <TicketCard id="#VB-085" title="重构登录逻辑，支持 OAuth2.0 协议" progress={15} tag="AUTH" highlight="HIGH" onSelect={onTicketSelect} />
+            <TicketCard id="#VB-085" title="重构登录逻辑，支持 OAuth2.0 协议" progress={15} tag="AUTH" vibeStage="plan" highlight="HIGH" onSelect={onTicketSelect} />
           </div>
         </div>
 
@@ -57,8 +60,8 @@ export function Kanban({ onTicketSelect }: { onTicketSelect: (id: string) => voi
             <button className="material-symbols-outlined hover:text-white">more_horiz</button>
           </div>
           <div className="flex-1 p-2 overflow-y-auto flex flex-col gap-2">
-            <TicketCard id="#VB-077" title="自动生成单元测试用例 (覆盖率 > 80%)" progress={68} tag="QA/TEST" agentActive score="72/100" activeBorder onSelect={onTicketSelect} />
-            <TicketCard id="#VB-081" title="沉淀组件上下文与验收说明" progress={42} tag="PRODUCT" score="40/100" onSelect={onTicketSelect} />
+            <TicketCard id="#VB-077" title="自动生成单元测试用例 (覆盖率 > 80%)" progress={68} tag="QA/TEST" vibeStage="evidence" agentActive score="72/100" activeBorder onSelect={onTicketSelect} />
+            <TicketCard id="#VB-081" title="沉淀组件上下文与验收说明" progress={42} tag="PRODUCT" vibeStage="evidence" score="40/100" onSelect={onTicketSelect} />
           </div>
         </div>
 
@@ -72,8 +75,8 @@ export function Kanban({ onTicketSelect }: { onTicketSelect: (id: string) => voi
             <button className="material-symbols-outlined hover:text-primary">more_horiz</button>
           </div>
           <div className="flex-1 p-2 overflow-y-auto flex flex-col gap-2">
-            <TicketCard id="#VB-070" title="实现用户权限校验中间件" progress={100} tag="BACKEND" score="98/100" isDone onSelect={onTicketSelect} />
-            <TicketCard id="#VB-068" title="修复移动端导航栏重叠渲染 Bug" progress={100} tag="UI/UX" score="95/100" isDone onSelect={onTicketSelect} />
+            <TicketCard id="#VB-070" title="实现用户权限校验中间件" progress={100} tag="BACKEND" vibeStage="review" score="98/100" isDone onSelect={onTicketSelect} />
+            <TicketCard id="#VB-068" title="修复移动端导航栏重叠渲染 Bug" progress={100} tag="UI/UX" vibeStage="review" score="95/100" isDone onSelect={onTicketSelect} />
           </div>
         </div>
       </div>
@@ -86,6 +89,7 @@ type TicketCardProps = {
   title: string;
   progress: number;
   tag: string;
+  vibeStage?: VibeStage;
   highlight?: string;
   agentActive?: boolean;
   score?: string;
@@ -94,7 +98,20 @@ type TicketCardProps = {
   onSelect: (id: string) => void;
 };
 
-function TicketCard({ id, title, progress, tag, highlight, agentActive, score, activeBorder, isDone, onSelect }: TicketCardProps) {
+function TicketCard({ id, title, progress, tag, vibeStage, highlight, agentActive, score, activeBorder, isDone, onSelect }: TicketCardProps) {
+  const stageLabels: Record<VibeStage, string> = {
+    brief: '简报',
+    plan: '计划',
+    evidence: '证据',
+    review: '审查'
+  };
+
+  const stageIcons: Record<VibeStage, string> = {
+    brief: 'description',
+    plan: 'route',
+    evidence: 'fact_check',
+    review: 'rate_review'
+  };
   return (
     <div 
       className={`border-2 p-2 cursor-pointer transition-colors group relative overflow-hidden flex flex-col
@@ -129,9 +146,15 @@ function TicketCard({ id, title, progress, tag, highlight, agentActive, score, a
         </div>
       </div>
       <div className={`flex justify-between items-center pt-2 border-t border-dashed relative z-10 ${isDone ? 'border-outline' : 'border-on-surface'}`}>
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
           <span className={`border px-1 text-[10px] font-bold uppercase ${isDone ? 'border-outline text-on-surface-variant' : 'bg-surface border-on-surface'}`}>{tag}</span>
           {highlight && <span className="bg-surface border border-on-surface px-1 text-[10px] font-bold text-error uppercase">{highlight}</span>}
+          {vibeStage && (
+            <span className="border border-primary bg-primary-container px-1 text-[10px] font-bold uppercase flex items-center gap-0.5">
+              <span className="material-symbols-outlined text-[10px]">{stageIcons[vibeStage]}</span>
+              {stageLabels[vibeStage]}
+            </span>
+          )}
         </div>
         <span className={`text-xs font-bold uppercase overflow-hidden ${isDone || score ? '' : 'text-tertiary'}`}>
           验收: <span className={agentActive ? 'text-primary' : (isDone ? 'text-primary' : '')}>{score || '--'}</span>
