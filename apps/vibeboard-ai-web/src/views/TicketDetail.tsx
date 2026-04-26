@@ -3,6 +3,7 @@ import type { VibeTicket, VibeStage } from '../types/vibeTicket';
 import { mockAuthTicket } from '../data/vibeTicketMock';
 import { BriefStage } from '../components/BriefStage';
 import { PlanStage } from '../components/PlanStage';
+import { EvidenceStage } from '../components/EvidenceStage';
 
 interface TicketDetailProps {
   id?: string;
@@ -28,7 +29,9 @@ export function TicketDetail({ id, onBack }: TicketDetailProps) {
         <div className="flex-1 overflow-y-auto">
           {currentStage === 'brief' && <BriefStage brief={ticket.brief} />}
           {currentStage === 'plan' && ticket.plan && <PlanStage plan={ticket.plan} />}
-          {currentStage === 'evidence' && <div className="p-6">Evidence Stage (U5)</div>}
+          {currentStage === 'evidence' && ticket.evidence && ticket.plan && (
+            <EvidenceStage evidence={ticket.evidence} plan={ticket.plan} />
+          )}
           {currentStage === 'review' && <div className="p-6">Review Stage (U7)</div>}
         </div>
 
