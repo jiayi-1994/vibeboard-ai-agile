@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface: #fff9ea;
+  --color-surface-dim: #e1dac3;
+  --color-surface-bright: #fff9ea;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #fbf4db;
+  --color-surface-container: #f5eed6;
+  --color-surface-container-high: #efe8d0;
+  --color-surface-container-highest: #e9e2cb;
+  --color-on-surface: #1e1c0d;
+  --color-on-surface-variant: #3d4a43;
+  --color-inverse-surface: #343121;
+  --color-inverse-on-surface: #f8f1d8;
+  --color-outline: #6d7a73;
+  --color-outline-variant: #bccac1;
+  
+  --color-primary: #006c4f;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #2eb086;
+  --color-on-primary-container: #003c2a;
+  --color-inverse-primary: #62dcaf;
+  --color-primary-fixed: #80f9ca;
+  --color-primary-fixed-dim: #62dcaf;
+  --color-on-primary-fixed: #002116;
+  --color-on-primary-fixed-variant: #00513b;
+  
+  --color-secondary: #3d6184;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #b1d5fd;
+  --color-on-secondary-container: #385d7f;
+  --color-secondary-fixed: #cfe5ff;
+  --color-secondary-fixed-dim: #a6caf1;
+  --color-on-secondary-fixed: #001d33;
+  --color-on-secondary-fixed-variant: #23496b;
+  
+  --color-tertiary: #5f5e5e;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #9e9c9c;
+  --color-on-tertiary-container: #343434;
+  --color-tertiary-fixed: #e5e2e1;
+  --color-tertiary-fixed-dim: #c8c6c5;
+  --color-on-tertiary-fixed: #1c1b1b;
+  --color-on-tertiary-fixed-variant: #474746;
+  
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  
+  --color-background: #fff9ea;
+  --color-on-background: #1e1c0d;
+
+  --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Space Grotesk', ui-monospace, SFMono-Regular, monospace;
+
+  /* Force 0px border radius everywhere */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-full: 0px;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  font-family: var(--font-sans);
+}
+
+* {
+  border-radius: 0px !important;
+}
+
+.brutal-shadow {
+  box-shadow: 2px 2px 0px 0px var(--color-on-surface);
+}
+
+.brutal-shadow-hover:hover {
+  box-shadow: 4px 4px 0px 0px var(--color-on-surface);
+  transform: translate(-2px, -2px);
+  transition: all 0.1s ease-in-out;
+}
+
+.brutal-shadow-active:active {
+  box-shadow: 0px 0px 0px 0px var(--color-on-surface);
+  transform: translate(2px, 2px);
+}
+
+.brutal-border {
+  border: 2px solid var(--color-on-surface);
+}
+
+.pixel-checker {
+  background-image: linear-gradient(45deg, var(--color-on-surface) 25%, transparent 25%, transparent 75%, var(--color-on-surface) 75%, var(--color-on-surface)), 
+                    linear-gradient(45deg, var(--color-on-surface) 25%, transparent 25%, transparent 75%, var(--color-on-surface) 75%, var(--color-on-surface));
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+  opacity: 0.05;
+}
+
+.grid-bg {
+  background-image: linear-gradient(to right, rgba(30, 28, 13, 0.05) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(30, 28, 13, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Custom Scrollbar for retro feel */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-surface);
+  border-left: 2px solid var(--color-on-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-on-surface);
+  border: 2px solid var(--color-surface);
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.icon-fill {
+  font-variation-settings: 'FILL' 1;
+}
