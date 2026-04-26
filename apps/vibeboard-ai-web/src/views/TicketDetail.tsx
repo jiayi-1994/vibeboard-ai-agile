@@ -4,6 +4,7 @@ import { mockAuthTicket } from '../data/vibeTicketMock';
 import { BriefStage } from '../components/BriefStage';
 import { PlanStage } from '../components/PlanStage';
 import { EvidenceStage } from '../components/EvidenceStage';
+import { ReviewStage } from '../components/ReviewStage';
 
 interface TicketDetailProps {
   id?: string;
@@ -32,7 +33,7 @@ export function TicketDetail({ id, onBack }: TicketDetailProps) {
           {currentStage === 'evidence' && ticket.evidence && ticket.plan && (
             <EvidenceStage evidence={ticket.evidence} plan={ticket.plan} />
           )}
-          {currentStage === 'review' && <div className="p-6">Review Stage (U7)</div>}
+          {currentStage === 'review' && ticket.review && <ReviewStage review={ticket.review} />}
         </div>
 
         <TerminalDrawer 
