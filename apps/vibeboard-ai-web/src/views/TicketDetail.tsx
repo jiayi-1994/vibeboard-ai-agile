@@ -1,10 +1,14 @@
-import { useState } from 'react';
-import type { VibeTicket, VibeStage } from '../types/vibeTicket';
-import { mockAuthTicket } from '../data/vibeTicketMock';
+import { useEffect, useRef, useState } from 'react';
+import { getTicketDetail, openTicketTimelineSocket } from '../api/tickets';
+import { toVibeTicketDetail } from '../api/ticketAdapters';
+import type { ApiTicketDetailRead, TicketTimelineSocketMessage } from '../api/tickets';
+import type { AgileStatus, TerminalLog, VibeStage, VibeTicket } from '../types/vibeTicket';
 import { BriefStage } from '../components/BriefStage';
 import { PlanStage } from '../components/PlanStage';
 import { EvidenceStage } from '../components/EvidenceStage';
 import { ReviewStage } from '../components/ReviewStage';
+import { useLedgerStore, useDerivedTicket } from '../store/ledgerStore';
+import { selectMaxSequence, selectMinSequence, selectPlaybackBanner, selectPlaybackValue } from '../store/ledgerSelectors';
 
 interface TicketDetailProps {
   id?: string;
@@ -12,14 +16,189 @@ interface TicketDetailProps {
 }
 
 export function TicketDetail({ id, onBack }: TicketDetailProps) {
-  const ticket = mockAuthTicket;
-  const [currentStage, setCurrentStage] = useState<VibeStage>(ticket.vibeStage);
+  const normalizedId = normalizeTicketId(id);
+  const { 
+    setTicket, 
+    addEvent, 
+    setEvents, 
+    setLive, 
+    lastAppliedSequence, 
+    reset,
+    isLive,
+    events,
+    playbackSequence,
+    setPlaybackSequence
+  } = useLedgerStore();
+  
+  const ticket = useDerivedTicket();
+  const [loading, setLoading] = useState(Boolean(normalizedId));
+  const [error, setError] = useState<string | null>(null);
+  const [currentStage, setCurrentStage] = useState<VibeStage>('brief');
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [timelineState, setTimelineState] = useState<'connecting' | 'live' | 'offline'>('connecting');
+  const reconnectTimerRef = useRef<number | null>(null);
+
+  const isPlayback = playbackSequence !== null;
+  const maxSequence = selectMaxSequence(events);
+  const minSequence = selectMinSequence(events);
+  const playbackValue = selectPlaybackValue(playbackSequence, maxSequence);
+  const playbackBanner = selectPlaybackBanner(playbackSequence, maxSequence);
+
+  useEffect(() => {
+    if (!normalizedId) {
+      reset();
+      setLoading(false);
+      setError('未提供 ticket id');
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadTicket = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const detail = await getTicketDetail(normalizedId);
+        if (!cancelled) {
+          setTicket(toVibeTicketDetail(detail));
+          if (detail.timelineEvents) {
+            setEvents(detail.timelineEvents);
+          }
+        }
+      } catch (fetchError) {
+        if (!cancelled) {
+          setError(fetchError instanceof Error ? fetchError.message : '加载工单失败');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadTicket();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [normalizedId]);
+
+  useEffect(() => {
+    if (ticket) {
+      setCurrentStage(ticket.vibeStage);
+    }
+  }, [ticket?.id, ticket?.vibeStage]);
+
+  useEffect(() => {
+    if (!normalizedId) {
+      return;
+    }
+
+    let disposed = false;
+    let socket: WebSocket | null = null;
+
+    const scheduleReconnect = () => {
+      if (disposed || reconnectTimerRef.current !== null) {
+        return;
+      }
+      reconnectTimerRef.current = window.setTimeout(() => {
+        reconnectTimerRef.current = null;
+        if (!disposed) {
+          connect();
+        }
+      }, 500);
+    };
+
+    const connect = () => {
+      setLive(false);
+      setTimelineState('connecting');
+      socket = openTicketTimelineSocket(normalizedId, useLedgerStore.getState().lastAppliedSequence);
+
+      socket.addEventListener('message', event => {
+        const message = JSON.parse(event.data) as TicketTimelineSocketMessage;
+
+        if (message.type === 'timeline.live') {
+          setLive(true);
+          setTimelineState('live');
+          return;
+        }
+
+        if (message.type === 'timeline.event.created') {
+          addEvent(message.data);
+        }
+      });
+
+      const handleOffline = () => {
+        if (disposed) {
+          return;
+        }
+        setLive(false);
+        setTimelineState('offline');
+        scheduleReconnect();
+      };
+
+      socket.addEventListener('close', handleOffline);
+      socket.addEventListener('error', handleOffline);
+    };
+
+    connect();
+
+    return () => {
+      disposed = true;
+      if (reconnectTimerRef.current !== null) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+      socket?.close();
+    };
+  }, [normalizedId, setLive, addEvent]);
+
+  if (loading) {
+    return <TicketLoading onBack={onBack} />;
+  }
+
+  if (!ticket) {
+    return <TicketNotFound id={id} onBack={onBack} error={error} />;
+  }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-surface">
+    <div className={`flex flex-col h-full overflow-hidden bg-surface ${isPlayback ? 'border-4 border-primary' : ''}`}>
       <TicketHeader ticket={ticket} onBack={onBack} />
       
+      {events.length > 0 && (
+        <div className="bg-surface-container-high border-b-2 border-on-surface p-2 flex flex-col gap-2">
+          <div className="flex items-center gap-4">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+              Timeline Scrubber
+            </span>
+            <input 
+              type="range" 
+              min={minSequence} 
+              max={maxSequence} 
+              value={playbackValue}
+              onChange={(e) => setPlaybackSequence(parseInt(e.target.value))}
+              className="flex-1 h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary"
+            />
+            <span className="text-[10px] font-mono font-bold">
+              {playbackValue} / {maxSequence}
+            </span>
+          </div>
+          {playbackBanner && (
+            <div className="flex items-center justify-between bg-primary-container border border-primary p-1 px-3">
+              <span className="text-[10px] font-bold text-primary uppercase">
+                {playbackBanner}
+              </span>
+              <button 
+                onClick={() => setPlaybackSequence(null)}
+                className="text-[10px] font-bold bg-primary text-white px-2 py-0.5 hover:bg-primary-variant transition-colors"
+              >
+                返回实时
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <StageNavigation 
         currentStage={currentStage} 
         onStageChange={setCurrentStage}
@@ -40,7 +219,66 @@ export function TicketDetail({ id, onBack }: TicketDetailProps) {
           isOpen={drawerOpen} 
           onToggle={() => setDrawerOpen(!drawerOpen)}
           logs={ticket.evidence?.rawLogs || []}
+          agileStatus={ticket.agileStatus}
+          timelineState={timelineState}
         />
+      </div>
+    </div>
+  );
+}
+
+function normalizeTicketId(id?: string): string | undefined {
+  if (!id) return undefined;
+  const legacyMatch = id.match(/^#VB-(\d+)$/);
+  return legacyMatch ? `TICKET-${legacyMatch[1]}` : id;
+}
+
+function TicketLoading({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="flex flex-col h-full bg-surface border-2 border-on-surface brutal-shadow">
+      <div className="border-b-2 border-on-surface bg-surface-container p-4 flex items-center gap-4">
+        <button
+          onClick={onBack}
+          className="hover:bg-surface-variant p-2 border border-on-surface transition-colors"
+        >
+          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+        </button>
+        <div>
+          <div className="text-xs uppercase font-bold text-on-surface-variant">Loading ticket</div>
+          <h1 className="text-2xl font-bold">正在同步真实工单...</h1>
+        </div>
+      </div>
+      <div className="p-6 grid gap-4">
+        <div className="h-5 bg-surface-variant animate-pulse"></div>
+        <div className="h-24 bg-surface-variant animate-pulse"></div>
+        <div className="h-24 bg-surface-variant animate-pulse"></div>
+      </div>
+    </div>
+  );
+}
+
+function TicketNotFound({ id, onBack, error }: { id?: string; onBack: () => void; error?: string | null }) {
+  return (
+    <div className="flex flex-col h-full bg-surface border-2 border-error brutal-shadow">
+      <div className="border-b-2 border-error bg-error-container p-4 flex items-center gap-4">
+        <button
+          onClick={onBack}
+          className="hover:bg-surface-variant p-2 border border-error transition-colors"
+        >
+          <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+        </button>
+        <div>
+          <div className="text-xs uppercase font-bold text-error">Ticket not found</div>
+          <h1 className="text-2xl font-bold">未找到工单：{id || 'UNKNOWN'}</h1>
+        </div>
+      </div>
+      <div className="p-6 text-sm text-on-surface-variant">
+        <div>请返回看板选择一个存在的 vibe ticket。</div>
+        {error && (
+          <div className="mt-3 border border-error bg-surface p-3 text-error font-mono text-xs">
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -52,6 +290,8 @@ interface TicketHeaderProps {
 }
 
 function TicketHeader({ ticket, onBack }: TicketHeaderProps) {
+  const statusBadgeClass = getStatusBadgeClass(ticket.agileStatus);
+
   return (
     <div className="border-b-2 border-on-surface bg-surface-container p-4 flex items-center gap-4">
       <button 
@@ -67,9 +307,9 @@ function TicketHeader({ ticket, onBack }: TicketHeaderProps) {
             {ticket.id}
           </span>
           <span className={`text-xs border px-2 py-1 uppercase font-bold flex items-center gap-1
-            ${ticket.agileStatus === 'in_progress' ? 'border-on-surface bg-surface-variant' : 'border-outline bg-surface-container'}
+            ${statusBadgeClass}
           `}>
-            <div className={`w-2 h-2 ${ticket.agileStatus === 'in_progress' ? 'bg-primary' : 'bg-tertiary'}`}></div>
+            <div className={`w-2 h-2 ${getStatusDotClass(ticket.agileStatus)}`}></div>
             {ticket.agileStatus.toUpperCase().replace('_', ' ')}
           </span>
           <span className={`text-xs border px-2 py-1 uppercase font-bold
@@ -153,17 +393,14 @@ function StageNavigation({ currentStage, onStageChange, ticket }: StageNavigatio
 interface TerminalDrawerProps {
   isOpen: boolean;
   onToggle: () => void;
-  logs: Array<{
-    time: string;
-    tag: string;
-    text: string;
-    tagColor?: string;
-    textColor?: string;
-    active?: boolean;
-  }>;
+  logs: TerminalLog[];
+  agileStatus: AgileStatus;
+  timelineState: 'connecting' | 'live' | 'offline';
 }
 
-function TerminalDrawer({ isOpen, onToggle, logs }: TerminalDrawerProps) {
+function TerminalDrawer({ isOpen, onToggle, logs, agileStatus, timelineState }: TerminalDrawerProps) {
+  const indicator = getTimelineIndicator(agileStatus, timelineState);
+
   return (
     <div 
       className={`border-t-2 border-on-surface bg-on-surface flex flex-col transition-all duration-300
@@ -185,16 +422,23 @@ function TerminalDrawer({ isOpen, onToggle, logs }: TerminalDrawerProps) {
         </span>
         <div className="ml-auto flex gap-2">
           <span className="flex items-center gap-1 text-[10px] text-surface font-bold">
-            <div className="w-2 h-2 bg-primary-fixed animate-pulse"></div> RUNNING
+            <div className={`w-2 h-2 ${indicator.dotClass} ${indicator.animate ? 'animate-pulse' : ''}`}></div>
+            {indicator.label}
           </span>
         </div>
       </div>
 
       {isOpen && (
         <div className="flex-1 overflow-y-auto p-2 text-xs font-mono space-y-1 dark-scroll">
-          {logs.map((log, index) => (
-            <TermLine key={index} {...log} />
-          ))}
+          {logs.length === 0 ? (
+            <div className="border border-dashed border-on-surface-variant p-3 text-surface-dim">
+              当前还没有 terminal/timeline 日志，等待后端继续推送事件。
+            </div>
+          ) : (
+            logs.map((log, index) => (
+              <TermLine key={index} {...log} />
+            ))
+          )}
         </div>
       )}
     </div>
@@ -229,6 +473,70 @@ function TermLine({ time, tag, text, tagColor, textColor, active }: {
       <span className="flex-1">{text}</span>
     </div>
   );
+}
+
+function dedupeTimelineEvents(events: ApiTicketDetailRead['timelineEvents'] = []) {
+  const byId = new Map(events.map(item => [item.id, item]));
+  return Array.from(byId.values()).sort(
+    (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime()
+  );
+}
+
+function getStatusBadgeClass(status: AgileStatus) {
+  switch (status) {
+    case 'in_progress':
+      return 'border-on-surface bg-surface-variant';
+    case 'review':
+      return 'border-secondary bg-secondary-container';
+    case 'blocked':
+      return 'border-error bg-error-container text-error';
+    case 'done':
+      return 'border-primary bg-primary-container';
+    default:
+      return 'border-outline bg-surface-container';
+  }
+}
+
+function getStatusDotClass(status: AgileStatus) {
+  switch (status) {
+    case 'in_progress':
+      return 'bg-primary';
+    case 'review':
+      return 'bg-secondary';
+    case 'blocked':
+      return 'bg-error';
+    case 'done':
+      return 'bg-primary';
+    default:
+      return 'bg-tertiary';
+  }
+}
+
+function getTimelineIndicator(
+  agileStatus: AgileStatus,
+  timelineState: 'connecting' | 'live' | 'offline'
+) {
+  if (timelineState === 'connecting') {
+    return { label: 'CONNECTING', dotClass: 'bg-secondary-fixed', animate: true };
+  }
+
+  if (timelineState === 'offline') {
+    return {
+      label: agileStatus === 'done' ? 'COMPLETE' : 'OFFLINE',
+      dotClass: agileStatus === 'done' ? 'bg-primary-fixed' : 'bg-error',
+      animate: false
+    };
+  }
+
+  if (agileStatus === 'blocked') {
+    return { label: 'BLOCKED', dotClass: 'bg-error', animate: true };
+  }
+
+  if (agileStatus === 'done') {
+    return { label: 'COMPLETE', dotClass: 'bg-primary-fixed', animate: false };
+  }
+
+  return { label: 'LIVE', dotClass: 'bg-primary-fixed', animate: true };
 }
 
 export default TicketDetail;

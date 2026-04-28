@@ -32,7 +32,7 @@ export default function App() {
       content = <Kanban onTicketSelect={handleTicketSelect} />;
       break;
     case 'ticket':
-      content = <TicketDetail id={selectedTicket || '#VB-ERROR'} onBack={handleBackToKanban} />;
+      content = <TicketDetail id={selectedTicket || undefined} onBack={handleBackToKanban} />;
       break;
     case 'review':
       content = <Review />;
@@ -61,4 +61,3 @@ export default function App() {
     </div>
   );
 }
-
