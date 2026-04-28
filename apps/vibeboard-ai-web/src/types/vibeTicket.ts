@@ -1,6 +1,6 @@
 export type VibeStage = 'brief' | 'plan' | 'evidence' | 'review';
 
-export type AgileStatus = 'backlog' | 'ready' | 'in_progress' | 'done';
+export type AgileStatus = 'backlog' | 'ready' | 'in_progress' | 'review' | 'blocked' | 'done';
 
 export type EvidenceType = 'ui_preview' | 'test_log' | 'api_response' | 'file_change' | 'command' | 'agent_decision' | 'user_correction' | 'checkpoint';
 
@@ -43,6 +43,7 @@ export interface PlanStep {
   completionSignal: string;
   risk: RiskLevel;
   requiresCheckpoint: boolean;
+  status?: 'pending' | 'running' | 'success' | 'failed';
 }
 
 export interface AgentPlan {
@@ -85,17 +86,35 @@ export interface TerminalLog {
   active?: boolean;
 }
 
+export interface ReviewAcceptanceCriterion {
+  criterion: string;
+  met: boolean;
+  evidence: string;
+  gap?: string;
+}
+
+export interface ReviewQualityMetrics {
+  testCoverage: number;
+  codeQuality: number;
+  documentationCompleteness: number;
+  performanceBenchmark: number;
+}
+
+export interface ReviewRisk {
+  severity: RiskLevel;
+  description: string;
+  mitigation: string;
+}
+
 export interface ReviewHandoff {
+  overallStatus: 'pass' | 'conditional' | 'fail';
+  summary: string;
   briefSummary: string;
   planSummary: string;
   evidenceSummary: string;
-  acceptanceResults: {
-    passed: number;
-    failed: number;
-    skipped: number;
-    details: AcceptanceCriteria[];
-  };
-  riskSummary: string;
+  acceptanceCriteria: ReviewAcceptanceCriterion[];
+  qualityMetrics: ReviewQualityMetrics;
+  risks: ReviewRisk[];
   changedFiles: string[];
   contextPackDraft: {
     prompt: string;
@@ -104,6 +123,8 @@ export interface ReviewHandoff {
     successfulChecks: string[];
     conventions: string[];
   };
+  recommendation: 'approve' | 'approve_with_conditions' | 'reject';
+  nextSteps: string[];
 }
 
 export interface VibeTicket {

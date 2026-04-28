@@ -59,29 +59,35 @@ function AcceptanceCriteriaReview({ criteria }: { criteria: ReviewHandoff['accep
         </span>
       </div>
       <div className="p-4 space-y-2">
-        {criteria.map((criterion, idx) => (
-          <div 
-            key={idx}
-            className={`border-2 p-3 flex items-start gap-3 ${
-              criterion.met ? 'border-primary bg-primary-container' : 'border-error bg-error-container'
-            }`}
-          >
-            <span className={`material-symbols-outlined text-[20px] mt-0.5 ${
-              criterion.met ? 'text-primary' : 'text-error'
-            }`}>
-              {criterion.met ? 'check_circle' : 'cancel'}
-            </span>
-            <div className="flex-1">
-              <div className="font-bold text-sm mb-1">{criterion.criterion}</div>
-              <div className="text-xs text-on-surface-variant">{criterion.evidence}</div>
-              {!criterion.met && criterion.gap && (
-                <div className="mt-2 text-xs bg-surface border border-error p-2">
-                  <span className="font-bold text-error">差距：</span> {criterion.gap}
-                </div>
-              )}
-            </div>
+        {criteria.length === 0 ? (
+          <div className="border border-dashed border-on-surface bg-surface p-4 text-sm text-on-surface-variant text-center">
+            当前还没有结构化验收标准，审查结论将暂时依赖 acceptance score、preview 状态和 timeline 证据。
           </div>
-        ))}
+        ) : (
+          criteria.map((criterion, idx) => (
+            <div 
+              key={idx}
+              className={`border-2 p-3 flex items-start gap-3 ${
+                criterion.met ? 'border-primary bg-primary-container' : 'border-error bg-error-container'
+              }`}
+            >
+              <span className={`material-symbols-outlined text-[20px] mt-0.5 ${
+                criterion.met ? 'text-primary' : 'text-error'
+              }`}>
+                {criterion.met ? 'check_circle' : 'cancel'}
+              </span>
+              <div className="flex-1">
+                <div className="font-bold text-sm mb-1">{criterion.criterion}</div>
+                <div className="text-xs text-on-surface-variant">{criterion.evidence}</div>
+                {!criterion.met && criterion.gap && (
+                  <div className="mt-2 text-xs bg-surface border border-error p-2">
+                    <span className="font-bold text-error">差距：</span> {criterion.gap}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </section>
   );

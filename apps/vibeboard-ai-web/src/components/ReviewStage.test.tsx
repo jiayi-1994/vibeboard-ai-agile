@@ -60,7 +60,7 @@ describe('ReviewStage', () => {
 
     renderWithProviders(<ReviewStage review={reviewWithGap} />);
     
-    expect(screen.getByText('差距：')).toBeInTheDocument();
+    expect(screen.getAllByText('差距：').length).toBeGreaterThan(0);
     expect(screen.getByText('Missing implementation')).toBeInTheDocument();
   });
 

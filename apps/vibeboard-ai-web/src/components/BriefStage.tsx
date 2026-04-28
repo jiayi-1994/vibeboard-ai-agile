@@ -112,7 +112,7 @@ function ContextPackCard({ pack }: { pack: IdeaBrief['contextPacks'][0] }) {
 function AcceptanceCriteriaSection({ criteria }: { criteria: IdeaBrief['acceptanceCriteria'] }) {
   const completed = criteria.filter(c => c.checked).length;
   const total = criteria.length;
-  const progress = Math.round((completed / total) * 100);
+  const progress = total === 0 ? 0 : Math.round((completed / total) * 100);
 
   return (
     <section className="border-2 border-on-surface bg-surface-container-lowest brutal-shadow">
@@ -129,9 +129,15 @@ function AcceptanceCriteriaSection({ criteria }: { criteria: IdeaBrief['acceptan
         </div>
       </div>
       <div className="p-4 space-y-2">
-        {criteria.map(item => (
-          <AcceptanceCriteriaItem key={item.id} item={item} />
-        ))}
+        {criteria.length === 0 ? (
+          <div className="border border-dashed border-on-surface bg-surface p-4 text-sm text-on-surface-variant text-center">
+            当前还没有录入验收标准，后续可通过后端 acceptance criteria 继续补齐。
+          </div>
+        ) : (
+          criteria.map(item => (
+            <AcceptanceCriteriaItem key={item.id} item={item} />
+          ))
+        )}
       </div>
     </section>
   );

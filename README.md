@@ -52,3 +52,46 @@ packages/       未来放共享包、SDK、agent 工具
 2. `docs/product/prd.md`
 3. `docs/product/mvp-scope.md`
 4. `docs/product/ui-information-architecture.md`
+
+## 本地开发
+
+### 前端
+
+保持现有前端工作流即可：
+
+```bash
+cd apps/vibeboard-ai-web
+npm install
+npm run dev
+```
+
+Vite 已代理 `/api` 和 `/ws` 到 `http://127.0.0.1:8000`，因此前端接后端时不需要额外改浏览器 CORS 配置。
+
+### Python 后端
+
+```bash
+cd apps/api
+uv sync
+uv run alembic upgrade head
+uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+启动后可访问：
+
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- OpenAPI JSON: `http://127.0.0.1:8000/openapi.json`
+
+默认 SQLite 文件会创建在 `apps/api/.data/vibeboard.db`。如果需要切换前端允许来源，可通过 `VIBEBOARD_CORS_ORIGINS` 传入逗号分隔的本地地址列表。
+
+### OpenAPI -> TypeScript 类型同步
+
+在仓库根目录执行：
+
+```bash
+pnpm run openapi:generate
+```
+
+这会：
+
+1. 从 FastAPI 导出 `apps/api/openapi.json`
+2. 生成 `apps/vibeboard-ai-web/src/types/api.generated.ts`

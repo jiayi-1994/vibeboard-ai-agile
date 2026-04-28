@@ -220,6 +220,73 @@ export const mockAuthTicket: VibeTicket = {
     nodes: authEvidenceNodes,
     rawLogs: authTerminalLogs
   },
+  review: {
+    overallStatus: 'conditional',
+    summary: '登录表单与 API 客户端已完成，证据链显示核心 UI 和请求封装可用；路由守卫与 401 过期处理仍在执行中，需要在交付前补齐。',
+    briefSummary: '身份验证需求、范围边界与上下文包已经整理完成。',
+    planSummary: '登录 UI 与 API 集成已完成，路由守卫与 401 清理仍在推进。',
+    evidenceSummary: '证据链显示表单、API client 已完成，路由守卫还在运行中。',
+    acceptanceCriteria: [
+      {
+        criterion: '生成基础登录表单 UI 组件 (账号/密码)',
+        met: true,
+        evidence: 'AuthForm.tsx 已生成，并通过 UI preview 证据确认可渲染。'
+      },
+      {
+        criterion: '集成 Axios 请求库并配置拦截器',
+        met: true,
+        evidence: 'auth API client 已创建，JWT token 注入逻辑已记录在执行证据中。'
+      },
+      {
+        criterion: '实现 React 路由守卫拦截未授权访问',
+        met: false,
+        evidence: '当前证据仍停留在 ProtectedRoute 实现中。',
+        gap: '需要提交路由守卫实现并补未授权跳转验证。'
+      },
+      {
+        criterion: '处理 401 Unauthorized 错误响应并清空本地态',
+        met: false,
+        evidence: '尚未看到 401 分支测试或运行日志。',
+        gap: '需要补错误拦截器和 token 清理验证。'
+      }
+    ],
+    qualityMetrics: {
+      testCoverage: 72,
+      codeQuality: 88,
+      documentationCompleteness: 84,
+      performanceBenchmark: 96
+    },
+    risks: [
+      {
+        severity: 'high',
+        description: '路由守卫未完成时，受保护页面仍可能被未授权用户访问。',
+        mitigation: '完成 ProtectedRoute 并添加未登录访问重定向测试。'
+      },
+      {
+        severity: 'medium',
+        description: '401 token 过期分支缺少自动化验证。',
+        mitigation: '补 API error interceptor 测试，确认过期后清空本地态。'
+      }
+    ],
+    changedFiles: [
+      'src/components/AuthForm.tsx',
+      'src/api/auth.ts',
+      'src/App.tsx'
+    ],
+    contextPackDraft: {
+      prompt: '实现完整的用户身份验证流程',
+      finalPlan: '先完成登录表单与 API 集成，再实现路由守卫和 401 错误处理。',
+      keyEvidence: ['Created AuthForm.tsx component', 'Created auth API client'],
+      successfulChecks: ['登录表单可渲染', 'JWT token 注入逻辑已记录'],
+      conventions: ['保持 brutalist 视觉风格', 'JWT token 由请求拦截器统一注入']
+    },
+    recommendation: 'approve_with_conditions',
+    nextSteps: [
+      '完成 React route guard 并补未授权访问测试。',
+      '实现 401 Unauthorized 清理流程并补过期 token 验证。',
+      '复跑 lint、单元测试和一次手动登录流程检查。'
+    ]
+  },
   createdAt: '2026-04-26T10:00:00Z',
   updatedAt: '2026-04-26T14:22:15Z'
 };
@@ -495,8 +562,9 @@ export const mockTickets: VibeTicket[] = [
   mockTestTicket
 ];
 
-export const getTicketById = (id: string): VibeTicket | undefined => {
-  return mockTickets.find(ticket => ticket.id === id);
+export const getTicketById = (id?: string): VibeTicket | undefined => {
+  if (!id) return undefined;
+  return mockTickets.find(t => t.id === id);
 };
 
 export const getTicketsByStage = (stage: VibeTicket['vibeStage']): VibeTicket[] => {

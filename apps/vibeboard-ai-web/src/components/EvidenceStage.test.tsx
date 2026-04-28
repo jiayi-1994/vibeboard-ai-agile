@@ -43,9 +43,9 @@ describe('EvidenceStage', () => {
   it('shows evidence node types', () => {
     renderWithProviders(<EvidenceStage evidence={evidence} plan={plan} />);
     
-    const types = new Set(evidence.nodes.map(n => n.type.replace('_', ' ').toUpperCase()));
+    const types = new Set(evidence.nodes.map(n => n.type.replace('_', ' ')));
     types.forEach(type => {
-      expect(screen.getByText(type)).toBeInTheDocument();
+      expect(screen.getAllByText(type).length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -109,7 +109,7 @@ describe('EvidenceStage', () => {
     renderWithProviders(<EvidenceStage evidence={evidence} plan={plan} />);
     
     const runningNodes = evidence.nodes.filter(n => n.status === 'running');
-    const runningStatuses = screen.getAllByText('RUNNING');
+    const runningStatuses = screen.getAllByText('running');
     expect(runningStatuses.length).toBeGreaterThanOrEqual(runningNodes.length);
   });
 });
