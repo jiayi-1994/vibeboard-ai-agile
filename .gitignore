@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+
+apps/api/.venv/
+apps/api/.pytest_cache/
+apps/api/__pycache__/
+apps/api/.data/
+apps/api/data/
+apps/api/openapi.json
+
+*.pyc
+__pycache__/
